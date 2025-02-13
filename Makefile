@@ -17,14 +17,12 @@ BIN_SEED=seed
 
 DOCKER_FILE=build/package/docker
 
-all: mod build-main run
+all: mod wire build-main run
 build: build-main
 reload: build-main run
 migrate: migrate-build migrate-run
 rollback: rollback-build rollback-run
 seed: mod seed-run run-seed
-docker-build: docker-build
-docker-down: docker-down
 
 mod:
 	$(GOMOD) vendor -v
@@ -76,3 +74,5 @@ docker-build:
 docker-down:
 	(cd $(DOCKER_FILE) && docker compose down)
 
+wire:
+	(cd internal/injector && wire)
