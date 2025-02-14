@@ -6,4 +6,5 @@ func RegisterRoutes(r *gin.RouterGroup, categories *CategoriesController) {
 	categoryGroup := r.Group("/categories")
 	categoryGroup.GET("", categories.FindAll)
 	categoryGroup.GET("/:id", categories.FindById)
+	categoryGroup.POST("", categories.Create)
 }

@@ -9,7 +9,6 @@ import (
 	"product-api-go/internal/pkg/response"
 	"product-api-go/internal/pkg/utils"
 	"product-api-go/internal/repository/postgres/category"
-	"time"
 )
 
 type categoriesService struct {
@@ -22,14 +21,14 @@ func NewCategoriesService(cp category.CategoriesPostgres) CategoriesService {
 	}
 }
 
-func (c *categoriesService) FindAll(q dto.CategoriesQuery) (res dto.FindAllCategoriesResponse, code int, err error) {
+func (c *categoriesService) FindAll(q dto.CategoryQuery) (res dto.CategoriesResponseWithPage, code int, err error) {
 	categories, totalItems, err := c.categoriesPostgres.FindAll(q)
 	if err != nil {
 		return res, http.StatusInternalServerError, err
 	}
 
 	for _, category := range categories {
-		res.Data = append(res.Data, dto.FindAllCategory{
+		res.Data = append(res.Data, dto.CategoryResponse{
 			ID:   category.ID,
 			Name: category.Name,
 		})
@@ -45,7 +44,7 @@ func (c *categoriesService) FindAll(q dto.CategoriesQuery) (res dto.FindAllCateg
 	return res, http.StatusOK, nil
 }
 
-func (c *categoriesService) FindById(id uuid.UUID) (res dto.FindByIdCategoryResponse, code int, err error) {
+func (c *categoriesService) FindById(id uuid.UUID) (res dto.CategoryResponse, code int, err error) {
 	category, err := c.categoriesPostgres.FindById(id)
 	if err != nil {
 		return res, http.StatusInternalServerError, err
@@ -55,17 +54,39 @@ func (c *categoriesService) FindById(id uuid.UUID) (res dto.FindByIdCategoryResp
 		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
 	}
 
-	formatTime := func(t time.Time) string {
-		formattedTime, _ := utils.FormatTimeWithTimezone(t)
-		return formattedTime
-	}
-
 	res.ID = category.ID
 	res.Name = category.Name
-	res.CreatedAt = formatTime(category.CreatedAt)
-	res.CreatedBy = category.CreatedBy
-	res.UpdatedAt = formatTime(category.UpdatedAt)
-	res.UpdatedBy = category.UpdatedBy
+	res.CreatedAt = utils.FormatTime(category.CreatedAt)
+	res.CreatedBy = &category.CreatedBy
+	res.UpdatedAt = utils.FormatTime(category.UpdatedAt)
+	res.UpdatedBy = &category.UpdatedBy
 
 	return res, http.StatusOK, nil
+}
+
+func (c *categoriesService) Create(input dto.CategoryInput) (res dto.CategoryResponse, code int, err error) {
+	checkIsExists, err := c.categoriesPostgres.FindByName(input.Name)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	if checkIsExists.ID != uuid.Nil {
+		return res, http.StatusConflict, errors.New(constant.CategoryAlreadyExists)
+	}
+
+	newCategory, err := c.categoriesPostgres.Create(input)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	res = dto.CategoryResponse{
+		ID:        newCategory.ID,
+		Name:      newCategory.Name,
+		CreatedAt: utils.FormatTime(newCategory.CreatedAt),
+		CreatedBy: &newCategory.CreatedBy,
+		UpdatedAt: utils.FormatTime(newCategory.UpdatedAt),
+		UpdatedBy: &newCategory.UpdatedBy,
+	}
+
+	return res, http.StatusCreated, nil
 }

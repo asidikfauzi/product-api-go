@@ -6,6 +6,7 @@ import (
 )
 
 type CategoriesService interface {
-	FindAll(query dto.CategoriesQuery) (dto.FindAllCategoriesResponse, int, error)
-	FindById(id uuid.UUID) (dto.FindByIdCategoryResponse, int, error)
+	FindAll(query dto.CategoryQuery) (dto.CategoriesResponseWithPage, int, error)
+	FindById(id uuid.UUID) (dto.CategoryResponse, int, error)
+	Create(input dto.CategoryInput) (dto.CategoryResponse, int, error)
 }
