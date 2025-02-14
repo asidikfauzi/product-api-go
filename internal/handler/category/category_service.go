@@ -80,12 +80,63 @@ func (c *categoriesService) Create(input dto.CategoryInput) (res dto.CategoryRes
 	}
 
 	res = dto.CategoryResponse{
-		ID:        newCategory.ID,
-		Name:      newCategory.Name,
-		CreatedAt: utils.FormatTime(newCategory.CreatedAt),
-		CreatedBy: &newCategory.CreatedBy,
-		UpdatedAt: utils.FormatTime(newCategory.UpdatedAt),
-		UpdatedBy: &newCategory.UpdatedBy,
+		ID:   newCategory.ID,
+		Name: newCategory.Name,
+	}
+
+	return res, http.StatusCreated, nil
+}
+
+func (c *categoriesService) Update(id uuid.UUID, input dto.CategoryInput) (res dto.CategoryResponse, code int, err error) {
+	checkIsExists, err := c.categoriesPostgres.FindById(id)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	if checkIsExists.ID == uuid.Nil {
+		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
+	}
+
+	checkNameExists, err := c.categoriesPostgres.FindByName(input.Name)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	if checkNameExists.ID != uuid.Nil {
+		return res, http.StatusConflict, errors.New(constant.CategoryAlreadyExists)
+	}
+
+	editCategory, err := c.categoriesPostgres.Update(id, input)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	res = dto.CategoryResponse{
+		ID:   editCategory.ID,
+		Name: editCategory.Name,
+	}
+
+	return res, http.StatusCreated, nil
+}
+
+func (c *categoriesService) Delete(id uuid.UUID) (res dto.CategoryResponse, code int, err error) {
+	checkIsExists, err := c.categoriesPostgres.FindById(id)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	if checkIsExists.ID == uuid.Nil {
+		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
+	}
+
+	deleteCategory, err := c.categoriesPostgres.Delete(id)
+	if err != nil {
+		return res, http.StatusInternalServerError, err
+	}
+
+	res = dto.CategoryResponse{
+		ID:   deleteCategory.ID,
+		Name: deleteCategory.Name,
 	}
 
 	return res, http.StatusCreated, nil

@@ -11,4 +11,6 @@ type CategoriesPostgres interface {
 	FindById(id uuid.UUID) (model.Categories, error)
 	FindByName(name string) (model.Categories, error)
 	Create(input dto.CategoryInput) (model.Categories, error)
+	Update(id uuid.UUID, input dto.CategoryInput) (model.Categories, error)
+	Delete(id uuid.UUID) (model.Categories, error)
 }

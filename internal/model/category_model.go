@@ -7,7 +7,7 @@ import (
 
 type Categories struct {
 	ID        uuid.UUID  `gorm:"type:uuid;primaryKey;default:uuid_generate_v4()" json:"id"`
-	Name      string     `gorm:"unique;type:varchar(100);not null" json:"name"`
+	Name      string     `gorm:"type:varchar(100);not null" json:"name"`
 	CreatedAt time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	CreatedBy uuid.UUID  `gorm:"type:uuid;not null" json:"created_by"`
 	UpdatedAt time.Time  `gorm:"autoUpdateTime" json:"updated_at"`

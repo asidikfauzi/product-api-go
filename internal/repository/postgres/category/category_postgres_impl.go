@@ -25,6 +25,8 @@ func (c *categories) FindAll(q dto.CategoryQuery) (res []model.Categories, total
 		q.OrderBy = "created_at"
 	}
 
+	fmt.Println(q)
+
 	if q.Direction != "ASC" && q.Direction != "DESC" {
 		q.Direction = "DESC"
 	}
@@ -55,17 +57,18 @@ func (c *categories) FindAll(q dto.CategoryQuery) (res []model.Categories, total
 }
 
 func (c *categories) FindById(id uuid.UUID) (res model.Categories, err error) {
-	if err := c.DB.Where("id = ?", id).First(&res).Error; err != nil {
-		return res, err
+	err = c.DB.Where("id = ? AND deleted_at IS NULL", id).First(&res).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return res, nil
 	}
 
 	return res, nil
 }
 
 func (c *categories) FindByName(name string) (res model.Categories, err error) {
-	err = c.DB.Where("name = ?", name).First(&res).Error
+	err = c.DB.Where("name = ? AND deleted_at IS NULL", name).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return model.Categories{}, nil
+		return res, nil
 	}
 
 	return res, err
@@ -73,14 +76,48 @@ func (c *categories) FindByName(name string) (res model.Categories, err error) {
 
 func (c *categories) Create(input dto.CategoryInput) (res model.Categories, err error) {
 	category := model.Categories{
-		ID:        uuid.New(),
 		Name:      input.Name,
 		CreatedAt: time.Now(),
 	}
 
-	if err = c.DB.Create(&category).Error; err != nil {
+	if err = c.DB.Model(&res).Create(&category).Error; err != nil {
 		return res, err
 	}
 
 	return category, nil
+}
+
+func (c *categories) Update(id uuid.UUID, input dto.CategoryInput) (res model.Categories, err error) {
+	if err = c.DB.First(&res, "id = ? AND deleted_at IS NULL", id).Error; err != nil {
+		return res, err
+	}
+
+	updateData := model.Categories{
+		Name:      input.Name,
+		UpdatedAt: time.Now(),
+	}
+
+	if err = c.DB.Model(&res).Updates(updateData).Error; err != nil {
+		return res, err
+	}
+
+	return res, nil
+}
+
+func (c *categories) Delete(id uuid.UUID) (res model.Categories, err error) {
+	if err := c.DB.First(&res, "id = ? AND deleted_at IS NULL", id).Error; err != nil {
+		return res, err
+	}
+
+	timeNow := time.Now()
+	uuidUser := uuid.Nil
+
+	if err := c.DB.Model(&res).Updates(model.Categories{
+		DeletedAt: &timeNow,
+		DeletedBy: &uuidUser,
+	}).Error; err != nil {
+		return res, err
+	}
+
+	return res, nil
 }

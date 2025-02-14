@@ -1,7 +1,6 @@
 package category
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
@@ -48,7 +47,6 @@ func (cc *CategoriesController) FindById(c *gin.Context) {
 	id := c.Param("id")
 
 	uuid, err := uuid.Parse(id)
-	fmt.Println(uuid)
 	if err != nil {
 		response.Error(c, http.StatusNotFound, constant.CategoryNotFound, nil)
 		return
@@ -65,7 +63,6 @@ func (cc *CategoriesController) FindById(c *gin.Context) {
 
 func (cc *CategoriesController) Create(c *gin.Context) {
 	var req dto.CategoryInput
-
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
 		return
@@ -84,4 +81,52 @@ func (cc *CategoriesController) Create(c *gin.Context) {
 	}
 
 	response.Success(c, 200, "successfully created category", data)
+}
+
+func (cc *CategoriesController) Update(c *gin.Context) {
+	id := c.Param("id")
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, constant.CategoryNotFound, nil)
+		return
+	}
+
+	var req dto.CategoryInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		return
+	}
+
+	validate := utils.FormatValidationError(req)
+	if len(validate) > 0 {
+		response.Error(c, http.StatusUnprocessableEntity, constant.CategoryUnprocessableEntity, validate)
+		return
+	}
+
+	data, code, err := cc.categoriesService.Update(uuid, req)
+	if err != nil {
+		response.Error(c, code, err.Error(), nil)
+		return
+	}
+
+	response.Success(c, 200, "successfully updated category", data)
+}
+
+func (cc *CategoriesController) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		response.Error(c, http.StatusNotFound, constant.CategoryNotFound, nil)
+		return
+	}
+
+	data, code, err := cc.categoriesService.Delete(uuid)
+	if err != nil {
+		response.Error(c, code, err.Error(), nil)
+		return
+	}
+
+	response.Success(c, 200, "successfully deleted category", data)
 }
