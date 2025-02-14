@@ -33,3 +33,8 @@ func FormatTimeWithTimezone(utcTime time.Time) (string, error) {
 	localTime := utcTime.In(location)
 	return localTime.Format("02-01-2006 15:04:05"), nil
 }
+
+func FormatTime(t time.Time) *string {
+	formattedTime, _ := FormatTimeWithTimezone(t)
+	return &formattedTime
+}

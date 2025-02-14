@@ -7,6 +7,8 @@ import (
 )
 
 type CategoriesPostgres interface {
-	FindAll(q dto.CategoriesQuery) ([]model.Categories, int64, error)
+	FindAll(q dto.CategoryQuery) ([]model.Categories, int64, error)
 	FindById(id uuid.UUID) (model.Categories, error)
+	FindByName(name string) (model.Categories, error)
+	Create(input dto.CategoryInput) (model.Categories, error)
 }

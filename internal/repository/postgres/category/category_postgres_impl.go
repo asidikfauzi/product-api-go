@@ -1,11 +1,13 @@
 package category
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"product-api-go/internal/handler/category/dto"
 	"product-api-go/internal/model"
+	"time"
 )
 
 type categories struct {
@@ -18,7 +20,7 @@ func NewCategoriesPostgres(db *gorm.DB) CategoriesPostgres {
 	}
 }
 
-func (c *categories) FindAll(q dto.CategoriesQuery) (res []model.Categories, totalItem int64, err error) {
+func (c *categories) FindAll(q dto.CategoryQuery) (res []model.Categories, totalItem int64, err error) {
 	if q.OrderBy == "" {
 		q.OrderBy = "created_at"
 	}
@@ -56,5 +58,29 @@ func (c *categories) FindById(id uuid.UUID) (res model.Categories, err error) {
 	if err := c.DB.Where("id = ?", id).First(&res).Error; err != nil {
 		return res, err
 	}
+
 	return res, nil
+}
+
+func (c *categories) FindByName(name string) (res model.Categories, err error) {
+	err = c.DB.Where("name = ?", name).First(&res).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return model.Categories{}, nil
+	}
+
+	return res, err
+}
+
+func (c *categories) Create(input dto.CategoryInput) (res model.Categories, err error) {
+	category := model.Categories{
+		ID:        uuid.New(),
+		Name:      input.Name,
+		CreatedAt: time.Now(),
+	}
+
+	if err = c.DB.Create(&category).Error; err != nil {
+		return res, err
+	}
+
+	return category, nil
 }
