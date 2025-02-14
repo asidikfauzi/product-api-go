@@ -1,0 +1,10 @@
+services:
+  app:
+    image: app:latest
+    container_name: dev-product-api-go
+    build:
+      context: ../../..
+      dockerfile: build/package/docker/dev.Dockerfile
+    volumes:
+      - ../../..:/app
+    restart: on-failure
