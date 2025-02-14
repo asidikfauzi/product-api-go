@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+const FindActiveCategoryQuery = "id = ? AND deleted_at IS NULL"
+
 type categories struct {
 	DB *gorm.DB
 }
@@ -24,8 +26,6 @@ func (c *categories) FindAll(q dto.CategoryQuery) (res []model.Categories, total
 	if q.OrderBy == "" {
 		q.OrderBy = "created_at"
 	}
-
-	fmt.Println(q)
 
 	if q.Direction != "ASC" && q.Direction != "DESC" {
 		q.Direction = "DESC"
@@ -57,7 +57,7 @@ func (c *categories) FindAll(q dto.CategoryQuery) (res []model.Categories, total
 }
 
 func (c *categories) FindById(id uuid.UUID) (res model.Categories, err error) {
-	err = c.DB.Where("id = ? AND deleted_at IS NULL", id).First(&res).Error
+	err = c.DB.Where(FindActiveCategoryQuery, id).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return res, nil
 	}
@@ -88,7 +88,7 @@ func (c *categories) Create(input dto.CategoryInput) (res model.Categories, err 
 }
 
 func (c *categories) Update(id uuid.UUID, input dto.CategoryInput) (res model.Categories, err error) {
-	if err = c.DB.First(&res, "id = ? AND deleted_at IS NULL", id).Error; err != nil {
+	if err = c.DB.First(&res, FindActiveCategoryQuery, id).Error; err != nil {
 		return res, err
 	}
 
@@ -105,7 +105,7 @@ func (c *categories) Update(id uuid.UUID, input dto.CategoryInput) (res model.Ca
 }
 
 func (c *categories) Delete(id uuid.UUID) (res model.Categories, err error) {
-	if err := c.DB.First(&res, "id = ? AND deleted_at IS NULL", id).Error; err != nil {
+	if err := c.DB.First(&res, FindActiveCategoryQuery, id).Error; err != nil {
 		return res, err
 	}
 

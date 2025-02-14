@@ -116,7 +116,7 @@ func (c *categoriesService) Update(id uuid.UUID, input dto.CategoryInput) (res d
 		Name: editCategory.Name,
 	}
 
-	return res, http.StatusCreated, nil
+	return res, http.StatusOK, nil
 }
 
 func (c *categoriesService) Delete(id uuid.UUID) (res dto.CategoryResponse, code int, err error) {
@@ -139,5 +139,5 @@ func (c *categoriesService) Delete(id uuid.UUID) (res dto.CategoryResponse, code
 		Name: deleteCategory.Name,
 	}
 
-	return res, http.StatusCreated, nil
+	return res, http.StatusOK, nil
 }
