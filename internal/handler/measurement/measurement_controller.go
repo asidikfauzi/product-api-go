@@ -27,13 +27,6 @@ func (mc *MeasurementsController) FindAll(c *gin.Context) {
 		return
 	}
 
-	if query.Page == 0 {
-		query.Page = 1
-	}
-	if query.Limit == 0 {
-		query.Limit = 10
-	}
-
 	res, code, err := mc.measurementsService.FindAll(query)
 	if err != nil {
 		response.Error(c, code, err.Error(), nil)

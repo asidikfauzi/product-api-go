@@ -4,6 +4,7 @@ const (
 	InvalidJsonPayload     string = "invalid request payload"
 	InvalidQueryParameters string = "invalid query parameters"
 	FailedToLoadTimeZone   string = "failed to load timezone: %w"
+	UnexpectedError        string = "unexpected error: %v"
 
 	CategoryNotFound            string = "category not found"
 	SomeCategoryNotFound        string = "some categories not found"

@@ -40,13 +40,15 @@ func (c *measurements) FindAll(q dto.MeasurementQuery) (res []model.ProductMeasu
 		return nil, 0, err
 	}
 
-	if q.Limit > 0 {
-		query = query.Limit(q.Limit)
+	if q.Paginate == "true" {
+		if q.Limit > 0 {
+			query = query.Limit(q.Limit)
+		}
+
+		query = query.Offset(offset)
 	}
 
-	if err = query.Offset(offset).
-		Order(fmt.Sprintf("%s %s", q.OrderBy, q.Direction)).
-		Find(&res).Error; err != nil {
+	if err = query.Order(fmt.Sprintf("%s %s", q.OrderBy, q.Direction)).Find(&res).Error; err != nil {
 		return nil, 0, err
 	}
 

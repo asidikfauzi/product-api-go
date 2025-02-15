@@ -59,8 +59,12 @@ func (c *products) FindAll(q dto.ProductQuery) (res []model.Products, totalItem 
 		return nil, 0, err
 	}
 
-	if q.Limit > 0 {
-		query = query.Limit(q.Limit)
+	if q.Paginate == "true" {
+		if q.Limit > 0 {
+			query = query.Limit(q.Limit)
+		}
+
+		query = query.Offset(offset)
 	}
 
 	if err = query.Offset(offset).
@@ -107,15 +111,11 @@ func (c *products) Create(input dto.ProductInput) (res model.Products, err error
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf("unexpected error: %v", r)
+			err = fmt.Errorf(constant.UnexpectedError, r)
 		}
 	}()
 
-	measurementUUID, err := uuid.Parse(input.MeasurementID)
-	if err != nil {
-		fmt.Println("Invalid UUID IN Postgres:", err)
-		return
-	}
+	measurementUUID, _ := uuid.Parse(input.MeasurementID)
 
 	product := model.Products{
 		Name:                 input.Name,
@@ -165,7 +165,7 @@ func (c *products) Update(id uuid.UUID, input dto.ProductInput) (res model.Produ
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf("unexpected error: %v", r)
+			err = fmt.Errorf(constant.UnexpectedError, r)
 		}
 	}()
 
@@ -223,7 +223,7 @@ func (c *products) Delete(id uuid.UUID) (res model.Products, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf("unexpected error: %v", r)
+			err = fmt.Errorf(constant.UnexpectedError, r)
 		}
 	}()
 
@@ -232,7 +232,6 @@ func (c *products) Delete(id uuid.UUID) (res model.Products, err error) {
 		return res, errors.New(constant.ProductNotFound)
 	}
 
-	// Soft delete dengan updated_at sebagai deleted_at
 	if err := tx.Model(&res).Update("deleted_at", time.Now()).Error; err != nil {
 		tx.Rollback()
 		return res, err

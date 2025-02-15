@@ -29,6 +29,18 @@ func NewProductsService(cp product.ProductsPostgres, mp measurement.Measurements
 }
 
 func (c *productsService) FindAll(q dto.ProductQuery) (res dto.ProductsResponseWithPage, code int, err error) {
+	if q.Page == 0 {
+		q.Page = 1
+	}
+
+	if q.Limit == 0 {
+		q.Limit = 10
+	}
+
+	if q.Paginate == "" || q.Paginate != "false" && q.Paginate != "true" {
+		q.Paginate = "true"
+	}
+
 	products, totalItems, err := c.productsPostgres.FindAll(q)
 	if err != nil {
 		return res, http.StatusInternalServerError, err

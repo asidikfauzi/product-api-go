@@ -22,6 +22,18 @@ func NewCategoriesService(cp category.CategoriesPostgres) CategoriesService {
 }
 
 func (c *categoriesService) FindAll(q dto.CategoryQuery) (res dto.CategoriesResponseWithPage, code int, err error) {
+	if q.Page == 0 {
+		q.Page = 1
+	}
+
+	if q.Limit == 0 {
+		q.Limit = 10
+	}
+
+	if q.Paginate == "" || q.Paginate != "false" && q.Paginate != "true" {
+		q.Paginate = "true"
+	}
+
 	categories, totalItems, err := c.categoriesPostgres.FindAll(q)
 	if err != nil {
 		return res, http.StatusInternalServerError, err

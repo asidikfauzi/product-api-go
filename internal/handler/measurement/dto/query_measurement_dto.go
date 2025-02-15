@@ -6,4 +6,5 @@ type MeasurementQuery struct {
 	Search    string `form:"search"`
 	OrderBy   string `form:"order_by"`
 	Direction string `form:"direction"`
+	Paginate  string `form:"paginate"`
 }

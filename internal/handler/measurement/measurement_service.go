@@ -21,6 +21,18 @@ func NewMeasurementsService(cp measurement.MeasurementsPostgres) MeasurementsSer
 }
 
 func (c *measurementsService) FindAll(q dto.MeasurementQuery) (res dto.MeasurementsResponseWithPage, code int, err error) {
+	if q.Page == 0 {
+		q.Page = 1
+	}
+
+	if q.Limit == 0 {
+		q.Limit = 10
+	}
+
+	if q.Paginate == "" || q.Paginate != "false" && q.Paginate != "true" {
+		q.Paginate = "true"
+	}
+
 	measurements, totalItems, err := c.measurementsPostgres.FindAll(q)
 	if err != nil {
 		return res, http.StatusInternalServerError, err

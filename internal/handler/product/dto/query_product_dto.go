@@ -7,4 +7,5 @@ type ProductQuery struct {
 	Category  string `form:"category"`
 	OrderBy   string `form:"order_by"`
 	Direction string `form:"direction"`
+	Paginate  string `form:"paginate"`
 }
