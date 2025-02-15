@@ -13,7 +13,7 @@ type Products struct {
 	PurchasePrice        int        `gorm:"not null" json:"purchase_price"`
 	SellingPrice         int        `gorm:"not null" json:"selling_price"`
 	TotalStock           int        `gorm:"not null" json:"total_stock"`
-	MinimumStock         string     `gorm:"default:10;not null" json:"minimum_stock"`
+	MinimumStock         int        `gorm:"default:10;not null" json:"minimum_stock"`
 	Image                *string    `gorm:"varchar(255)" json:"image"`
 	CreatedAt            time.Time  `gorm:"autoCreateTime" json:"created_at"`
 	CreatedBy            uuid.UUID  `gorm:"type:uuid;not null" json:"created_by"`
