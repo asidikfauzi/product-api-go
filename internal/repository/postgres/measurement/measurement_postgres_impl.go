@@ -71,6 +71,15 @@ func (c *measurements) FindByName(name string) (res model.ProductMeasurements, e
 	return res, err
 }
 
+func (c *measurements) FindByNameExcludeID(name string, excludeID uuid.UUID) (res model.ProductMeasurements, err error) {
+	err = c.DB.Where("name = ? AND id != ?", name, excludeID).First(&res).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return res, nil
+	}
+
+	return res, err
+}
+
 func (c *measurements) Create(input dto.MeasurementInput) (res model.ProductMeasurements, err error) {
 	measurement := model.ProductMeasurements{
 		Name: input.Name,

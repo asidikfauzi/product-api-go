@@ -92,7 +92,7 @@ func (c *measurementsService) Update(id uuid.UUID, input dto.MeasurementInput) (
 		return res, http.StatusNotFound, errors.New(constant.MeasurementNotFound)
 	}
 
-	checkNameExists, err := c.measurementsPostgres.FindByName(input.Name)
+	checkNameExists, err := c.measurementsPostgres.FindByNameExcludeID(input.Name, id)
 	if err != nil {
 		return res, http.StatusInternalServerError, err
 	}
