@@ -38,3 +38,10 @@ func FormatTime(t time.Time) *string {
 	formattedTime, _ := FormatTimeWithTimezone(t)
 	return &formattedTime
 }
+
+func FormatDefaultString(str *string, defaultValue string) *string {
+	if str != nil {
+		return str
+	}
+	return &defaultValue
+}
