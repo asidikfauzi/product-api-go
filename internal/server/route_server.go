@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"product-api-go/internal/handler/category"
 	"product-api-go/internal/handler/measurement"
+	"product-api-go/internal/handler/product"
 	"product-api-go/internal/injector"
 )
 
@@ -27,6 +28,9 @@ func InitializedServer() *Server {
 
 	measurementModule := injector.InitializedMeasurementsModule()
 	measurement.RegisterRoutes(api, measurementModule)
+
+	productModule := injector.InitializedProductsModule()
+	product.RegisterRoutes(api, productModule)
 
 	return &Server{Engine: r}
 }

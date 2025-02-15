@@ -10,8 +10,10 @@ import (
 	"product-api-go/internal/database"
 	"product-api-go/internal/handler/category"
 	"product-api-go/internal/handler/measurement"
+	"product-api-go/internal/handler/product"
 	category2 "product-api-go/internal/repository/postgres/category"
 	measurement2 "product-api-go/internal/repository/postgres/measurement"
+	product2 "product-api-go/internal/repository/postgres/product"
 )
 
 // Injectors from category_wire.go:
@@ -32,4 +34,16 @@ func InitializedMeasurementsModule() *measurement.MeasurementsController {
 	measurementsService := measurement.NewMeasurementsService(measurementsPostgres)
 	measurementsController := measurement.NewMeasurementsController(measurementsService)
 	return measurementsController
+}
+
+// Injectors from product_wire.go:
+
+func InitializedProductsModule() *product.ProductsController {
+	db := database.InitDatabase()
+	productsPostgres := product2.NewProductsPostgres(db)
+	measurementsPostgres := measurement2.NewMeasurementsPostgres(db)
+	categoriesPostgres := category2.NewCategoriesPostgres(db)
+	productsService := product.NewProductsService(productsPostgres, measurementsPostgres, categoriesPostgres)
+	productsController := product.NewProductsController(productsService)
+	return productsController
 }
