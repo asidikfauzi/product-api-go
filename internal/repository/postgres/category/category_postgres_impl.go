@@ -65,8 +65,26 @@ func (c *categories) FindById(id uuid.UUID) (res model.Categories, err error) {
 	return res, nil
 }
 
+func (c *categories) FindManyById(ids []uuid.UUID) (res []model.Categories, err error) {
+	err = c.DB.Where("id IN (?) AND deleted_at IS NULL", ids).Find(&res).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+
+	return res, err
+}
+
 func (c *categories) FindByName(name string) (res model.Categories, err error) {
 	err = c.DB.Where("name = ? AND deleted_at IS NULL", name).First(&res).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return res, nil
+	}
+
+	return res, err
+}
+
+func (c *categories) FindByNameExcludeID(name string, excludeID uuid.UUID) (res model.Categories, err error) {
+	err = c.DB.Where("name = ? AND id != ? AND deleted_at IS NULL", name, excludeID).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return res, nil
 	}

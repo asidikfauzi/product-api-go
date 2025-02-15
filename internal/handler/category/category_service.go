@@ -97,7 +97,7 @@ func (c *categoriesService) Update(id uuid.UUID, input dto.CategoryInput) (res d
 		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
 	}
 
-	checkNameExists, err := c.categoriesPostgres.FindByName(input.Name)
+	checkNameExists, err := c.categoriesPostgres.FindByNameExcludeID(input.Name, id)
 	if err != nil {
 		return res, http.StatusInternalServerError, err
 	}
