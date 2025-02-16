@@ -34,12 +34,12 @@ func Success(c *gin.Context, code int, message string, data interface{}) {
 
 func SuccessPaginate(c *gin.Context, code int, message string, data interface{}, page PaginationResponse) {
 	totalPages := int(math.Ceil(float64(page.TotalItems) / float64(page.ItemsPerPage)))
-	hasNextPage := int(page.CurrentPage) < totalPages
+	hasNextPage := page.CurrentPage < totalPages
 	hasPrevPage := int(page.CurrentPage) > 1
 
 	page.HasNextPage = hasNextPage
 	page.HasPrevPage = hasPrevPage
-	page.TotalPages = int(totalPages)
+	page.TotalPages = totalPages
 
 	resp := SuccessResponse{
 		Code:    code,
