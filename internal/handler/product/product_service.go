@@ -2,7 +2,9 @@ package product
 
 import (
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	dtoCat "product-api-go/internal/handler/category/dto"
 	"product-api-go/internal/handler/product/dto"
@@ -11,34 +13,51 @@ import (
 	"product-api-go/internal/pkg/utils"
 	"product-api-go/internal/repository/postgres/category"
 	"product-api-go/internal/repository/postgres/measurement"
-	"product-api-go/internal/repository/postgres/product"
+	postgres "product-api-go/internal/repository/postgres/product"
+	redis "product-api-go/internal/repository/redis/product"
 )
 
 type productsService struct {
-	productsPostgres    product.ProductsPostgres
+	productsPostgres    postgres.ProductsPostgres
+	productRedis        redis.ProductsRedis
 	measurementPostgres measurement.MeasurementsPostgres
 	categoryPostgres    category.CategoriesPostgres
 }
 
-func NewProductsService(cp product.ProductsPostgres, mp measurement.MeasurementsPostgres, cap category.CategoriesPostgres) ProductsService {
+func NewProductsService(cp postgres.ProductsPostgres, pr redis.ProductsRedis, mp measurement.MeasurementsPostgres, cap category.CategoriesPostgres) ProductsService {
 	return &productsService{
 		productsPostgres:    cp,
+		productRedis:        pr,
 		measurementPostgres: mp,
 		categoryPostgres:    cap,
 	}
 }
 
-func (c *productsService) FindAll(q dto.ProductQuery) (res dto.ProductsResponseWithPage, code int, err error) {
+func normalizeProductQuery(q dto.ProductQuery) dto.ProductQuery {
 	if q.Page == 0 {
 		q.Page = 1
 	}
-
 	if q.Limit == 0 {
 		q.Limit = 10
 	}
-
-	if q.Paginate == "" || q.Paginate != "false" && q.Paginate != "true" {
+	if q.Paginate == "" || (q.Paginate != "false" && q.Paginate != "true") {
 		q.Paginate = "true"
+	}
+	return q
+}
+
+func (c *productsService) FindAll(q dto.ProductQuery) (res dto.ProductsResponseWithPage, code int, err error) {
+	q = normalizeProductQuery(q)
+
+	if q.Paginate == "false" && q.Search == "" {
+		getCache, err := c.productRedis.GetAllProduct(fmt.Sprintf(constant.AllProductsKey, q.OrderBy, q.Direction, q.Category))
+		if err != nil {
+			log.Printf(err.Error())
+		}
+
+		if getCache.Data != nil {
+			return getCache, http.StatusOK, nil
+		}
 	}
 
 	products, totalItems, err := c.productsPostgres.FindAll(q)
@@ -76,10 +95,26 @@ func (c *productsService) FindAll(q dto.ProductQuery) (res dto.ProductsResponseW
 		CurrentPage:  q.Page,
 	}
 
+	if q.Paginate == "false" && q.Search == "" {
+		err := c.productRedis.CreateAllProduct(fmt.Sprintf(constant.AllProductsKey, q.OrderBy, q.Direction, q.Category), res)
+		if err != nil {
+			log.Printf(err.Error())
+		}
+	}
+
 	return res, http.StatusOK, nil
 }
 
 func (c *productsService) FindById(id uuid.UUID) (res dto.ProductResponse, code int, err error) {
+	getCache, err := c.productRedis.GetProductById(id)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+
+	if getCache.ID != uuid.Nil {
+		return getCache, http.StatusOK, nil
+	}
+
 	product, err := c.productsPostgres.FindById(id)
 	if err != nil {
 		return res, http.StatusInternalServerError, err
@@ -111,6 +146,8 @@ func (c *productsService) FindById(id uuid.UUID) (res dto.ProductResponse, code 
 	res.CreatedBy = &product.CreatedBy
 	res.UpdatedAt = utils.FormatTime(product.UpdatedAt)
 	res.UpdatedBy = &product.UpdatedBy
+
+	c.productRedis.CreateProductById(id, res)
 
 	return res, http.StatusOK, nil
 }
@@ -166,6 +203,8 @@ func (c *productsService) Create(input dto.ProductInput) (res dto.ProductRespons
 		MinimumStock:  newProduct.MinimumStock,
 		Image:         newProduct.Image,
 	}
+
+	c.productRedis.DeleteAll(constant.DeleteAllProductKey)
 
 	return res, http.StatusCreated, nil
 }
@@ -231,6 +270,9 @@ func (c *productsService) Update(id uuid.UUID, input dto.ProductInput) (res dto.
 		Image:         editProduct.Image,
 	}
 
+	c.productRedis.DeleteAll(constant.DeleteAllProductKey)
+	c.productRedis.Delete(fmt.Sprintf(constant.ProductByIdKey, res.ID))
+
 	return res, http.StatusOK, nil
 }
 
@@ -259,6 +301,9 @@ func (c *productsService) Delete(id uuid.UUID) (res dto.ProductResponse, code in
 		MinimumStock:  deleteProduct.MinimumStock,
 		Image:         deleteProduct.Image,
 	}
+
+	c.productRedis.DeleteAll(constant.DeleteAllProductKey)
+	c.productRedis.Delete(fmt.Sprintf(constant.ProductByIdKey, res.ID))
 
 	return res, http.StatusOK, nil
 }

@@ -2,36 +2,55 @@ package category
 
 import (
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
+	"log"
 	"net/http"
 	"product-api-go/internal/handler/category/dto"
 	"product-api-go/internal/pkg/constant"
 	"product-api-go/internal/pkg/response"
 	"product-api-go/internal/pkg/utils"
-	"product-api-go/internal/repository/postgres/category"
+	postgres "product-api-go/internal/repository/postgres/category"
+	redis "product-api-go/internal/repository/redis/category"
 )
 
 type categoriesService struct {
-	categoriesPostgres category.CategoriesPostgres
+	categoriesPostgres postgres.CategoriesPostgres
+	categoriesRedis    redis.CategoriesRedis
 }
 
-func NewCategoriesService(cp category.CategoriesPostgres) CategoriesService {
+func NewCategoriesService(cp postgres.CategoriesPostgres, cr redis.CategoriesRedis) CategoriesService {
 	return &categoriesService{
 		categoriesPostgres: cp,
+		categoriesRedis:    cr,
 	}
 }
 
-func (c *categoriesService) FindAll(q dto.CategoryQuery) (res dto.CategoriesResponseWithPage, code int, err error) {
+func normalizeCategoryQuery(q dto.CategoryQuery) dto.CategoryQuery {
 	if q.Page == 0 {
 		q.Page = 1
 	}
-
 	if q.Limit == 0 {
 		q.Limit = 10
 	}
-
-	if q.Paginate == "" || q.Paginate != "false" && q.Paginate != "true" {
+	if q.Paginate == "" || (q.Paginate != "false" && q.Paginate != "true") {
 		q.Paginate = "true"
+	}
+	return q
+}
+
+func (c *categoriesService) FindAll(q dto.CategoryQuery) (res dto.CategoriesResponseWithPage, code int, err error) {
+	q = normalizeCategoryQuery(q)
+
+	if q.Paginate == "false" && q.Search == "" {
+		getCache, err := c.categoriesRedis.GetAllCategory(fmt.Sprintf(constant.AllCategoriesKey, q.OrderBy, q.Direction))
+		if err != nil {
+			log.Printf(err.Error())
+		}
+
+		if getCache.Data != nil {
+			return getCache, http.StatusOK, nil
+		}
 	}
 
 	categories, totalItems, err := c.categoriesPostgres.FindAll(q)
@@ -53,10 +72,26 @@ func (c *categoriesService) FindAll(q dto.CategoryQuery) (res dto.CategoriesResp
 		CurrentPage:  q.Page,
 	}
 
+	if q.Paginate == "false" && q.Search == "" {
+		err := c.categoriesRedis.CreateAllCategory(fmt.Sprintf(constant.AllCategoriesKey, q.OrderBy, q.Direction), res)
+		if err != nil {
+			log.Printf(err.Error())
+		}
+	}
+
 	return res, http.StatusOK, nil
 }
 
 func (c *categoriesService) FindById(id uuid.UUID) (res dto.CategoryResponse, code int, err error) {
+	getCache, err := c.categoriesRedis.GetCategoryById(id)
+	if err != nil {
+		log.Printf(err.Error())
+	}
+
+	if getCache.ID != uuid.Nil {
+		return getCache, http.StatusOK, nil
+	}
+
 	category, err := c.categoriesPostgres.FindById(id)
 	if err != nil {
 		return res, http.StatusInternalServerError, err
@@ -72,6 +107,8 @@ func (c *categoriesService) FindById(id uuid.UUID) (res dto.CategoryResponse, co
 	res.CreatedBy = &category.CreatedBy
 	res.UpdatedAt = utils.FormatTime(category.UpdatedAt)
 	res.UpdatedBy = &category.UpdatedBy
+
+	c.categoriesRedis.CreateCategoryById(id, res)
 
 	return res, http.StatusOK, nil
 }
@@ -95,6 +132,8 @@ func (c *categoriesService) Create(input dto.CategoryInput) (res dto.CategoryRes
 		ID:   newCategory.ID,
 		Name: newCategory.Name,
 	}
+
+	c.categoriesRedis.DeleteAll(constant.DeleteAllCategoryKey)
 
 	return res, http.StatusCreated, nil
 }
@@ -128,6 +167,9 @@ func (c *categoriesService) Update(id uuid.UUID, input dto.CategoryInput) (res d
 		Name: editCategory.Name,
 	}
 
+	c.categoriesRedis.DeleteAll(constant.DeleteAllCategoryKey)
+	c.categoriesRedis.Delete(fmt.Sprintf(constant.CategoryByIdKey, res.ID))
+
 	return res, http.StatusOK, nil
 }
 
@@ -150,6 +192,9 @@ func (c *categoriesService) Delete(id uuid.UUID) (res dto.CategoryResponse, code
 		ID:   deleteCategory.ID,
 		Name: deleteCategory.Name,
 	}
+
+	c.categoriesRedis.DeleteAll(constant.DeleteAllCategoryKey)
+	c.categoriesRedis.Delete(fmt.Sprintf(constant.CategoryByIdKey, res.ID))
 
 	return res, http.StatusOK, nil
 }
