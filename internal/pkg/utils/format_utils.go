@@ -27,7 +27,7 @@ func FormatTimeWithTimezone(utcTime time.Time) (string, error) {
 
 	location, err := time.LoadLocation(timezone)
 	if err != nil {
-		return "", fmt.Errorf(constant.FailedToLoadTimeZone, err)
+		return "", fmt.Errorf("%w %v", constant.FailedToLoadTimeZone, err)
 	}
 
 	localTime := utcTime.In(location)
