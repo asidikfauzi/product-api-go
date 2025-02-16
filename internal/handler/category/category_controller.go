@@ -23,7 +23,7 @@ func NewCategoriesController(cs CategoriesService) *CategoriesController {
 func (cc *CategoriesController) FindAll(c *gin.Context) {
 	var query dto.CategoryQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidQueryParameters, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidQueryParameters.Error(), err.Error())
 		return
 	}
 
@@ -41,7 +41,7 @@ func (cc *CategoriesController) FindById(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.CategoryNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.CategoryNotFound.Error(), nil)
 		return
 	}
 
@@ -57,13 +57,13 @@ func (cc *CategoriesController) FindById(c *gin.Context) {
 func (cc *CategoriesController) Create(c *gin.Context) {
 	var req dto.CategoryInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload.Error(), err.Error())
 		return
 	}
 
 	validate := utils.FormatValidationError(req)
 	if len(validate) > 0 {
-		response.Error(c, http.StatusUnprocessableEntity, constant.CategoryUnprocessableEntity, validate)
+		response.Error(c, http.StatusUnprocessableEntity, constant.CategoryUnprocessableEntity.Error(), validate)
 		return
 	}
 
@@ -81,19 +81,19 @@ func (cc *CategoriesController) Update(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.CategoryNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.CategoryNotFound.Error(), nil)
 		return
 	}
 
 	var req dto.CategoryInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload.Error(), err.Error())
 		return
 	}
 
 	validate := utils.FormatValidationError(req)
 	if len(validate) > 0 {
-		response.Error(c, http.StatusUnprocessableEntity, constant.CategoryUnprocessableEntity, validate)
+		response.Error(c, http.StatusUnprocessableEntity, constant.CategoryUnprocessableEntity.Error(), validate)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (cc *CategoriesController) Delete(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.CategoryNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.CategoryNotFound.Error(), nil)
 		return
 	}
 

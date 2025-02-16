@@ -84,21 +84,20 @@ func (c *categoriesService) FindAll(q dto.CategoryQuery) (res dto.CategoriesResp
 
 func (c *categoriesService) FindById(id uuid.UUID) (res dto.CategoryResponse, code int, err error) {
 	getCache, err := c.categoriesRedis.GetCategoryById(id)
-	if err != nil {
-		log.Printf(err.Error())
-	}
-
 	if getCache.ID != uuid.Nil {
 		return getCache, http.StatusOK, nil
 	}
 
-	category, err := c.categoriesPostgres.FindById(id)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
+	if !errors.Is(err, constant.KeyRedisNotExists) {
+		log.Printf("Redis error: %v", err)
 	}
 
-	if category.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
+	category, err := c.categoriesPostgres.FindById(id)
+	if err != nil {
+		if errors.Is(err, constant.CategoryNotFound) {
+			return res, http.StatusNotFound, constant.CategoryNotFound
+		}
+		return res, http.StatusInternalServerError, err
 	}
 
 	res.ID = category.ID
@@ -114,13 +113,9 @@ func (c *categoriesService) FindById(id uuid.UUID) (res dto.CategoryResponse, co
 }
 
 func (c *categoriesService) Create(input dto.CategoryInput) (res dto.CategoryResponse, code int, err error) {
-	checkIsExists, err := c.categoriesPostgres.FindByName(input.Name)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
-	}
-
-	if checkIsExists.ID != uuid.Nil {
-		return res, http.StatusConflict, errors.New(constant.CategoryAlreadyExists)
+	_, err = c.categoriesPostgres.FindByName(input.Name)
+	if err == nil {
+		return res, http.StatusConflict, constant.CategoryAlreadyExists
 	}
 
 	newCategory, err := c.categoriesPostgres.Create(input)
@@ -139,22 +134,17 @@ func (c *categoriesService) Create(input dto.CategoryInput) (res dto.CategoryRes
 }
 
 func (c *categoriesService) Update(id uuid.UUID, input dto.CategoryInput) (res dto.CategoryResponse, code int, err error) {
-	checkIsExists, err := c.categoriesPostgres.FindById(id)
+	_, err = c.categoriesPostgres.FindById(id)
 	if err != nil {
+		if errors.Is(err, constant.CategoryNotFound) {
+			return res, http.StatusNotFound, constant.CategoryNotFound
+		}
 		return res, http.StatusInternalServerError, err
 	}
 
-	if checkIsExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
-	}
-
-	checkNameExists, err := c.categoriesPostgres.FindByNameExcludeID(input.Name, id)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
-	}
-
-	if checkNameExists.ID != uuid.Nil {
-		return res, http.StatusConflict, errors.New(constant.CategoryAlreadyExists)
+	_, err = c.categoriesPostgres.FindByNameExcludeID(input.Name, id)
+	if err == nil {
+		return res, http.StatusConflict, constant.CategoryAlreadyExists
 	}
 
 	editCategory, err := c.categoriesPostgres.Update(id, input)
@@ -174,13 +164,12 @@ func (c *categoriesService) Update(id uuid.UUID, input dto.CategoryInput) (res d
 }
 
 func (c *categoriesService) Delete(id uuid.UUID) (res dto.CategoryResponse, code int, err error) {
-	checkIsExists, err := c.categoriesPostgres.FindById(id)
+	_, err = c.categoriesPostgres.FindById(id)
 	if err != nil {
+		if errors.Is(err, constant.CategoryNotFound) {
+			return res, http.StatusNotFound, constant.CategoryNotFound
+		}
 		return res, http.StatusInternalServerError, err
-	}
-
-	if checkIsExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.CategoryNotFound)
 	}
 
 	deleteCategory, err := c.categoriesPostgres.Delete(id)
