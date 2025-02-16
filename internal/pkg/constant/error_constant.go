@@ -5,6 +5,13 @@ const (
 	InvalidQueryParameters string = "invalid query parameters"
 	FailedToLoadTimeZone   string = "failed to load timezone: %w"
 	UnexpectedError        string = "unexpected error: %v"
+	JsonUnmarshalError     string = "json unmarshal error: %v"
+	JsonMarshalError       string = "json marshal error: %v"
+
+	KeyRedisNotExists string = "key not exists"
+	RedisGetError     string = "redis get error: %v"
+	RedisSetError     string = "redis set error: %v"
+	RedisDeleteError  string = "redis delete error: %v"
 
 	CategoryNotFound            string = "category not found"
 	SomeCategoryNotFound        string = "some categories not found"
