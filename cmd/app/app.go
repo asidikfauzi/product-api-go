@@ -9,6 +9,7 @@ import (
 
 func main() {
 	fmt.Println("Starting server...")
+	database.InitRedis()
 	database.InitDatabase()
 
 	s := server.InitializedServer()

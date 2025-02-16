@@ -14,6 +14,9 @@ import (
 	category2 "product-api-go/internal/repository/postgres/category"
 	measurement2 "product-api-go/internal/repository/postgres/measurement"
 	product2 "product-api-go/internal/repository/postgres/product"
+	category3 "product-api-go/internal/repository/redis/category"
+	measurement3 "product-api-go/internal/repository/redis/measurement"
+	product3 "product-api-go/internal/repository/redis/product"
 )
 
 // Injectors from category_wire.go:
@@ -21,7 +24,9 @@ import (
 func InitializedCategoriesModule() *category.CategoriesController {
 	db := database.InitDatabase()
 	categoriesPostgres := category2.NewCategoriesPostgres(db)
-	categoriesService := category.NewCategoriesService(categoriesPostgres)
+	client := database.InitRedis()
+	categoriesRedis := category3.NewCategoriesRedis(client)
+	categoriesService := category.NewCategoriesService(categoriesPostgres, categoriesRedis)
 	categoriesController := category.NewCategoriesController(categoriesService)
 	return categoriesController
 }
@@ -31,7 +36,9 @@ func InitializedCategoriesModule() *category.CategoriesController {
 func InitializedMeasurementsModule() *measurement.MeasurementsController {
 	db := database.InitDatabase()
 	measurementsPostgres := measurement2.NewMeasurementsPostgres(db)
-	measurementsService := measurement.NewMeasurementsService(measurementsPostgres)
+	client := database.InitRedis()
+	measurementsRedis := measurement3.NewMeasurementsRedis(client)
+	measurementsService := measurement.NewMeasurementsService(measurementsPostgres, measurementsRedis)
 	measurementsController := measurement.NewMeasurementsController(measurementsService)
 	return measurementsController
 }
@@ -41,9 +48,11 @@ func InitializedMeasurementsModule() *measurement.MeasurementsController {
 func InitializedProductsModule() *product.ProductsController {
 	db := database.InitDatabase()
 	productsPostgres := product2.NewProductsPostgres(db)
+	client := database.InitRedis()
+	productsRedis := product3.NewProductsRedis(client)
 	measurementsPostgres := measurement2.NewMeasurementsPostgres(db)
 	categoriesPostgres := category2.NewCategoriesPostgres(db)
-	productsService := product.NewProductsService(productsPostgres, measurementsPostgres, categoriesPostgres)
+	productsService := product.NewProductsService(productsPostgres, productsRedis, measurementsPostgres, categoriesPostgres)
 	productsController := product.NewProductsController(productsService)
 	return productsController
 }
