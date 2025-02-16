@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+const ErrFormat = "%w: %v"
 const FindActiveProductQuery = "id = ? AND deleted_at IS NULL"
 
 type products struct {
@@ -81,16 +82,16 @@ func (c *products) FindById(id uuid.UUID) (res model.Products, err error) {
 		Preload("ProductMeasurement").
 		Preload("Categories").First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return res, nil
+		return res, constant.ProductNotFound
 	}
 
-	return res, nil
+	return res, err
 }
 
 func (c *products) FindByName(name string) (res model.Products, err error) {
 	err = c.DB.Where("name = ? AND deleted_at IS NULL", name).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return res, nil
+		return res, constant.ProductNotFound
 	}
 
 	return res, err
@@ -99,7 +100,7 @@ func (c *products) FindByName(name string) (res model.Products, err error) {
 func (c *products) FindByNameExcludeID(name string, excludeID uuid.UUID) (res model.Products, err error) {
 	err = c.DB.Where("name = ? AND id != ? AND deleted_at IS NULL", name, excludeID).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return res, nil
+		return res, constant.ProductNotFound
 	}
 
 	return res, err
@@ -111,7 +112,7 @@ func (c *products) Create(input dto.ProductInput) (res model.Products, err error
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf(constant.UnexpectedError, r)
+			err = fmt.Errorf(ErrFormat, constant.UnexpectedError, r)
 		}
 	}()
 
@@ -142,7 +143,7 @@ func (c *products) Create(input dto.ProductInput) (res model.Products, err error
 
 		if len(categories) != len(input.Categories) {
 			tx.Rollback()
-			return res, errors.New(constant.SomeCategoryNotFound)
+			return res, constant.SomeCategoryNotFound
 		}
 
 		if err = tx.Model(&product).Association("Categories").Replace(categories); err != nil {
@@ -165,28 +166,28 @@ func (c *products) Update(id uuid.UUID, input dto.ProductInput) (res model.Produ
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf(constant.UnexpectedError, r)
+			err = fmt.Errorf(ErrFormat, constant.UnexpectedError, r)
 		}
 	}()
 
-	var product model.Products
-	if err = tx.Preload("Categories").Where("id = ?", id).First(&product).Error; err != nil {
+	res, err = c.FindById(id)
+	if err != nil {
 		tx.Rollback()
-		return res, errors.New(constant.ProductNotFound)
+		return res, err
 	}
 
 	measurementUUID, _ := uuid.Parse(input.MeasurementID)
 
-	product.Name = input.Name
-	product.Description = input.Description
-	product.PurchasePrice = input.PurchasePrice
-	product.SellingPrice = input.SellingPrice
-	product.TotalStock = input.TotalStock
-	product.MinimumStock = input.MinimumStock
-	product.Image = input.Image
-	product.ProductMeasurementID = measurementUUID
+	res.Name = input.Name
+	res.Description = input.Description
+	res.PurchasePrice = input.PurchasePrice
+	res.SellingPrice = input.SellingPrice
+	res.TotalStock = input.TotalStock
+	res.MinimumStock = input.MinimumStock
+	res.Image = input.Image
+	res.ProductMeasurementID = measurementUUID
 
-	if err = tx.Save(&product).Error; err != nil {
+	if err = tx.Save(&res).Error; err != nil {
 		tx.Rollback()
 		return res, err
 	}
@@ -200,10 +201,10 @@ func (c *products) Update(id uuid.UUID, input dto.ProductInput) (res model.Produ
 
 		if len(categories) != len(input.Categories) {
 			tx.Rollback()
-			return res, errors.New(constant.SomeCategoryNotFound)
+			return res, constant.SomeCategoryNotFound
 		}
 
-		if err = tx.Model(&product).Association("Categories").Replace(categories); err != nil {
+		if err = tx.Model(&res).Association("Categories").Replace(categories); err != nil {
 			tx.Rollback()
 			return res, err
 		}
@@ -214,7 +215,7 @@ func (c *products) Update(id uuid.UUID, input dto.ProductInput) (res model.Produ
 		return res, err
 	}
 
-	return product, nil
+	return res, nil
 }
 
 func (c *products) Delete(id uuid.UUID) (res model.Products, err error) {
@@ -223,13 +224,13 @@ func (c *products) Delete(id uuid.UUID) (res model.Products, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			tx.Rollback()
-			err = fmt.Errorf(constant.UnexpectedError, r)
+			err = fmt.Errorf(ErrFormat, constant.UnexpectedError, r)
 		}
 	}()
 
-	if err := tx.Where("id = ?", id).First(&res).Error; err != nil {
-		tx.Rollback()
-		return res, errors.New(constant.ProductNotFound)
+	res, err = c.FindById(id)
+	if err != nil {
+		return res, err
 	}
 
 	if err := tx.Model(&res).Update("deleted_at", time.Now()).Error; err != nil {

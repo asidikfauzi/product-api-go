@@ -107,21 +107,20 @@ func (c *productsService) FindAll(q dto.ProductQuery) (res dto.ProductsResponseW
 
 func (c *productsService) FindById(id uuid.UUID) (res dto.ProductResponse, code int, err error) {
 	getCache, err := c.productRedis.GetProductById(id)
-	if err != nil {
-		log.Printf(err.Error())
-	}
-
 	if getCache.ID != uuid.Nil {
 		return getCache, http.StatusOK, nil
 	}
 
-	product, err := c.productsPostgres.FindById(id)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
+	if !errors.Is(err, constant.KeyRedisNotExists) {
+		log.Printf("Redis error: %v", err)
 	}
 
-	if product.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.ProductNotFound)
+	product, err := c.productsPostgres.FindById(id)
+	if err != nil {
+		if errors.Is(err, constant.ProductNotFound) {
+			return res, http.StatusNotFound, constant.ProductNotFound
+		}
+		return res, http.StatusInternalServerError, err
 	}
 
 	var categories []dtoCat.CategoryResponse
@@ -155,13 +154,12 @@ func (c *productsService) FindById(id uuid.UUID) (res dto.ProductResponse, code 
 func (c *productsService) Create(input dto.ProductInput) (res dto.ProductResponse, code int, err error) {
 	uuidMea, _ := uuid.Parse(input.MeasurementID)
 
-	checkMeaExists, err := c.measurementPostgres.FindById(uuidMea)
+	_, err = c.measurementPostgres.FindById(uuidMea)
 	if err != nil {
+		if errors.Is(err, constant.MeasurementNotFound) {
+			return res, http.StatusNotFound, constant.MeasurementNotFound
+		}
 		return res, http.StatusInternalServerError, err
-	}
-
-	if checkMeaExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.MeasurementNotFound)
 	}
 
 	var categoryIDs []uuid.UUID
@@ -170,22 +168,17 @@ func (c *productsService) Create(input dto.ProductInput) (res dto.ProductRespons
 		categoryIDs = append(categoryIDs, parsedID)
 	}
 
-	checkCatSomeExists, err := c.categoryPostgres.FindManyById(categoryIDs)
+	_, err = c.categoryPostgres.FindManyById(categoryIDs)
 	if err != nil {
+		if errors.Is(err, constant.SomeCategoryNotFound) {
+			return res, http.StatusNotFound, constant.SomeCategoryNotFound
+		}
 		return res, http.StatusInternalServerError, err
 	}
 
-	if len(checkCatSomeExists) == 0 {
-		return res, http.StatusNotFound, errors.New(constant.SomeCategoryNotFound)
-	}
-
-	checkIsExists, err := c.productsPostgres.FindByName(input.Name)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
-	}
-
-	if checkIsExists.ID != uuid.Nil {
-		return res, http.StatusConflict, errors.New(constant.ProductAlreadyExists)
+	_, err = c.productsPostgres.FindByName(input.Name)
+	if err == nil {
+		return res, http.StatusConflict, constant.ProductAlreadyExists
 	}
 
 	newProduct, err := c.productsPostgres.Create(input)
@@ -210,24 +203,22 @@ func (c *productsService) Create(input dto.ProductInput) (res dto.ProductRespons
 }
 
 func (c *productsService) Update(id uuid.UUID, input dto.ProductInput) (res dto.ProductResponse, code int, err error) {
-	checkIsExists, err := c.productsPostgres.FindById(id)
+	_, err = c.productsPostgres.FindById(id)
 	if err != nil {
+		if errors.Is(err, constant.ProductNotFound) {
+			return res, http.StatusNotFound, constant.ProductNotFound
+		}
 		return res, http.StatusInternalServerError, err
-	}
-
-	if checkIsExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.ProductNotFound)
 	}
 
 	uuidMea, _ := uuid.Parse(input.MeasurementID)
 
-	checkMeaExists, err := c.measurementPostgres.FindById(uuidMea)
+	_, err = c.measurementPostgres.FindById(uuidMea)
 	if err != nil {
+		if errors.Is(err, constant.MeasurementNotFound) {
+			return res, http.StatusNotFound, constant.MeasurementNotFound
+		}
 		return res, http.StatusInternalServerError, err
-	}
-
-	if checkMeaExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.MeasurementNotFound)
 	}
 
 	var categoryIDs []uuid.UUID
@@ -236,22 +227,17 @@ func (c *productsService) Update(id uuid.UUID, input dto.ProductInput) (res dto.
 		categoryIDs = append(categoryIDs, parsedID)
 	}
 
-	checkCatSomeExists, err := c.categoryPostgres.FindManyById(categoryIDs)
+	_, err = c.categoryPostgres.FindManyById(categoryIDs)
 	if err != nil {
+		if errors.Is(err, constant.SomeCategoryNotFound) {
+			return res, http.StatusNotFound, constant.SomeCategoryNotFound
+		}
 		return res, http.StatusInternalServerError, err
 	}
 
-	if len(checkCatSomeExists) == 0 {
-		return res, http.StatusNotFound, errors.New(constant.SomeCategoryNotFound)
-	}
-
-	checkNameExists, err := c.productsPostgres.FindByNameExcludeID(input.Name, id)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
-	}
-
-	if checkNameExists.ID != uuid.Nil {
-		return res, http.StatusConflict, errors.New(constant.ProductAlreadyExists)
+	_, err = c.productsPostgres.FindByNameExcludeID(input.Name, id)
+	if err == nil {
+		return res, http.StatusConflict, constant.ProductAlreadyExists
 	}
 
 	editProduct, err := c.productsPostgres.Update(id, input)
@@ -277,13 +263,12 @@ func (c *productsService) Update(id uuid.UUID, input dto.ProductInput) (res dto.
 }
 
 func (c *productsService) Delete(id uuid.UUID) (res dto.ProductResponse, code int, err error) {
-	checkIsExists, err := c.productsPostgres.FindById(id)
+	_, err = c.productsPostgres.FindById(id)
 	if err != nil {
+		if errors.Is(err, constant.ProductNotFound) {
+			return res, http.StatusNotFound, constant.ProductNotFound
+		}
 		return res, http.StatusInternalServerError, err
-	}
-
-	if checkIsExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.ProductNotFound)
 	}
 
 	deleteProduct, err := c.productsPostgres.Delete(id)

@@ -23,7 +23,7 @@ func NewProductsController(cs ProductsService) *ProductsController {
 func (cc *ProductsController) FindAll(c *gin.Context) {
 	var query dto.ProductQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidQueryParameters, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidQueryParameters.Error(), err.Error())
 		return
 	}
 
@@ -41,7 +41,7 @@ func (cc *ProductsController) FindById(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.ProductNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.ProductNotFound.Error(), nil)
 		return
 	}
 
@@ -57,26 +57,26 @@ func (cc *ProductsController) FindById(c *gin.Context) {
 func (cc *ProductsController) Create(c *gin.Context) {
 	var req dto.ProductInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload.Error(), err.Error())
 		return
 	}
 
 	validate := utils.FormatValidationError(req)
 	if len(validate) > 0 {
-		response.Error(c, http.StatusUnprocessableEntity, constant.ProductUnprocessableEntity, validate)
+		response.Error(c, http.StatusUnprocessableEntity, constant.ProductUnprocessableEntity.Error(), validate)
 		return
 	}
 
 	_, err := uuid.Parse(req.MeasurementID)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound.Error(), nil)
 		return
 	}
 
 	for _, category := range req.Categories {
 		_, err := uuid.Parse(category)
 		if err != nil {
-			response.Error(c, http.StatusNotFound, constant.SomeCategoryNotFound, nil)
+			response.Error(c, http.StatusNotFound, constant.SomeCategoryNotFound.Error(), nil)
 			return
 		}
 	}
@@ -95,32 +95,32 @@ func (cc *ProductsController) Update(c *gin.Context) {
 
 	uuId, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.ProductNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.ProductNotFound.Error(), nil)
 		return
 	}
 
 	var req dto.ProductInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload.Error(), err.Error())
 		return
 	}
 
 	validate := utils.FormatValidationError(req)
 	if len(validate) > 0 {
-		response.Error(c, http.StatusUnprocessableEntity, constant.ProductUnprocessableEntity, validate)
+		response.Error(c, http.StatusUnprocessableEntity, constant.ProductUnprocessableEntity.Error(), validate)
 		return
 	}
 
 	_, err = uuid.Parse(req.MeasurementID)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound.Error(), nil)
 		return
 	}
 
 	for _, category := range req.Categories {
 		_, err := uuid.Parse(category)
 		if err != nil {
-			response.Error(c, http.StatusNotFound, constant.SomeCategoryNotFound, nil)
+			response.Error(c, http.StatusNotFound, constant.SomeCategoryNotFound.Error(), nil)
 			return
 		}
 	}
@@ -139,7 +139,7 @@ func (cc *ProductsController) Delete(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.ProductNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.ProductNotFound.Error(), nil)
 		return
 	}
 

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
-	"log"
 	"product-api-go/internal/handler/product/dto"
 	"product-api-go/internal/pkg/constant"
 )
@@ -28,15 +27,13 @@ func (c *products) GetAllProduct(key string) (res dto.ProductsResponseWithPage, 
 
 	value, err := c.redis.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
-		return res, errors.New(constant.KeyRedisNotExists)
+		return res, constant.KeyRedisNotExists
 	} else if err != nil {
-		log.Printf(constant.RedisGetError, err)
 		return res, err
 	}
 
 	err = json.Unmarshal([]byte(value), &res)
 	if err != nil {
-		log.Printf(constant.JsonUnmarshalError, err)
 		return res, err
 	}
 
@@ -46,13 +43,11 @@ func (c *products) GetAllProduct(key string) (res dto.ProductsResponseWithPage, 
 func (c *products) CreateAllProduct(key string, data dto.ProductsResponseWithPage) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		log.Printf(constant.JsonMarshalError, err)
 		return err
 	}
 
 	err = c.redis.Set(ctx, key, jsonData, 0).Err()
 	if err != nil {
-		log.Printf(constant.RedisSetError, err)
 		return err
 	}
 
@@ -64,15 +59,13 @@ func (c *products) GetProductById(uuid uuid.UUID) (res dto.ProductResponse, err 
 
 	value, err := c.redis.Get(ctx, key).Result()
 	if errors.Is(err, redis.Nil) {
-		return res, errors.New(constant.KeyRedisNotExists)
+		return res, constant.KeyRedisNotExists
 	} else if err != nil {
-		log.Printf(constant.RedisGetError, err)
 		return res, err
 	}
 
 	err = json.Unmarshal([]byte(value), &res)
 	if err != nil {
-		log.Printf(constant.JsonUnmarshalError, err)
 		return res, err
 	}
 
@@ -82,7 +75,6 @@ func (c *products) GetProductById(uuid uuid.UUID) (res dto.ProductResponse, err 
 func (c *products) CreateProductById(uuid uuid.UUID, data dto.ProductResponse) error {
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		log.Printf(constant.JsonMarshalError, err)
 		return err
 	}
 
@@ -90,7 +82,6 @@ func (c *products) CreateProductById(uuid uuid.UUID, data dto.ProductResponse) e
 
 	err = c.redis.Set(ctx, key, jsonData, 0).Err()
 	if err != nil {
-		log.Printf(constant.RedisSetError, err)
 		return err
 	}
 
@@ -131,7 +122,6 @@ func (c *products) DeleteAll(key string) error {
 func (c *products) Delete(key string) error {
 	err := c.redis.Del(ctx, key).Err()
 	if err != nil {
-		log.Printf(constant.RedisDeleteError, err)
 		return err
 	}
 
