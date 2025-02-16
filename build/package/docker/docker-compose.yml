@@ -40,7 +40,6 @@ services:
     env_file:
       - ../../../.env
   redis:
-    hostname: ${REDIS_HOST}
     container_name: product-redis
     image: redis:latest
     ports:
