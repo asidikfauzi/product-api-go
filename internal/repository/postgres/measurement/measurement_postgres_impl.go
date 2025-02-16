@@ -7,6 +7,7 @@ import (
 	"gorm.io/gorm"
 	"product-api-go/internal/handler/measurement/dto"
 	"product-api-go/internal/model"
+	"product-api-go/internal/pkg/constant"
 )
 
 type measurements struct {
@@ -58,16 +59,16 @@ func (c *measurements) FindAll(q dto.MeasurementQuery) (res []model.ProductMeasu
 func (c *measurements) FindById(id uuid.UUID) (res model.ProductMeasurements, err error) {
 	err = c.DB.Where("id = ?", id).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return res, nil
+		return res, constant.MeasurementNotFound
 	}
 
-	return res, nil
+	return res, err
 }
 
 func (c *measurements) FindByName(name string) (res model.ProductMeasurements, err error) {
 	err = c.DB.Where("name = ?", name).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return res, nil
+		return res, constant.MeasurementNotFound
 	}
 
 	return res, err
@@ -76,7 +77,7 @@ func (c *measurements) FindByName(name string) (res model.ProductMeasurements, e
 func (c *measurements) FindByNameExcludeID(name string, excludeID uuid.UUID) (res model.ProductMeasurements, err error) {
 	err = c.DB.Where("name = ? AND id != ?", name, excludeID).First(&res).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		return res, nil
+		return res, constant.MeasurementNotFound
 	}
 
 	return res, err
@@ -95,7 +96,8 @@ func (c *measurements) Create(input dto.MeasurementInput) (res model.ProductMeas
 }
 
 func (c *measurements) Update(id uuid.UUID, input dto.MeasurementInput) (res model.ProductMeasurements, err error) {
-	if err = c.DB.First(&res, "id = ?", id).Error; err != nil {
+	res, err = c.FindById(id)
+	if err != nil {
 		return res, err
 	}
 

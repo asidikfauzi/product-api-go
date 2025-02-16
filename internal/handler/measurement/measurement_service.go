@@ -83,21 +83,20 @@ func (c *measurementsService) FindAll(q dto.MeasurementQuery) (res dto.Measureme
 
 func (c *measurementsService) FindById(id uuid.UUID) (res dto.MeasurementResponse, code int, err error) {
 	getCache, err := c.measurementsRedis.GetMeasurementById(id)
-	if err != nil {
-		log.Printf(err.Error())
-	}
-
 	if getCache.ID != uuid.Nil {
 		return getCache, http.StatusOK, nil
 	}
 
-	measurement, err := c.measurementsPostgres.FindById(id)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
+	if !errors.Is(err, constant.KeyRedisNotExists) {
+		log.Printf("Redis error: %v", err)
 	}
 
-	if measurement.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.MeasurementNotFound)
+	measurement, err := c.measurementsPostgres.FindById(id)
+	if err != nil {
+		if errors.Is(err, constant.MeasurementNotFound) {
+			return res, http.StatusNotFound, constant.MeasurementNotFound
+		}
+		return res, http.StatusInternalServerError, err
 	}
 
 	res.ID = measurement.ID
@@ -109,13 +108,9 @@ func (c *measurementsService) FindById(id uuid.UUID) (res dto.MeasurementRespons
 }
 
 func (c *measurementsService) Create(input dto.MeasurementInput) (res dto.MeasurementResponse, code int, err error) {
-	checkIsExists, err := c.measurementsPostgres.FindByName(input.Name)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
-	}
-
-	if checkIsExists.ID != uuid.Nil {
-		return res, http.StatusConflict, errors.New(constant.MeasurementAlreadyExists)
+	_, err = c.measurementsPostgres.FindByName(input.Name)
+	if err == nil {
+		return res, http.StatusConflict, constant.MeasurementAlreadyExists
 	}
 
 	newMeasurement, err := c.measurementsPostgres.Create(input)
@@ -134,22 +129,17 @@ func (c *measurementsService) Create(input dto.MeasurementInput) (res dto.Measur
 }
 
 func (c *measurementsService) Update(id uuid.UUID, input dto.MeasurementInput) (res dto.MeasurementResponse, code int, err error) {
-	checkIsExists, err := c.measurementsPostgres.FindById(id)
+	_, err = c.measurementsPostgres.FindById(id)
 	if err != nil {
+		if errors.Is(err, constant.MeasurementNotFound) {
+			return res, http.StatusNotFound, constant.MeasurementNotFound
+		}
 		return res, http.StatusInternalServerError, err
 	}
 
-	if checkIsExists.ID == uuid.Nil {
-		return res, http.StatusNotFound, errors.New(constant.MeasurementNotFound)
-	}
-
-	checkNameExists, err := c.measurementsPostgres.FindByNameExcludeID(input.Name, id)
-	if err != nil {
-		return res, http.StatusInternalServerError, err
-	}
-
-	if checkNameExists.ID != uuid.Nil {
-		return res, http.StatusConflict, errors.New(constant.MeasurementAlreadyExists)
+	_, err = c.measurementsPostgres.FindByNameExcludeID(input.Name, id)
+	if err == nil {
+		return res, http.StatusConflict, constant.MeasurementAlreadyExists
 	}
 
 	editMeasurement, err := c.measurementsPostgres.Update(id, input)

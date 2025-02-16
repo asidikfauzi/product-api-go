@@ -23,7 +23,7 @@ func NewMeasurementsController(cs MeasurementsService) *MeasurementsController {
 func (mc *MeasurementsController) FindAll(c *gin.Context) {
 	var query dto.MeasurementQuery
 	if err := c.ShouldBindQuery(&query); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidQueryParameters, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidQueryParameters.Error(), err.Error())
 		return
 	}
 
@@ -41,7 +41,7 @@ func (mc *MeasurementsController) FindById(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound.Error(), nil)
 		return
 	}
 
@@ -57,13 +57,13 @@ func (mc *MeasurementsController) FindById(c *gin.Context) {
 func (mc *MeasurementsController) Create(c *gin.Context) {
 	var req dto.MeasurementInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload.Error(), err.Error())
 		return
 	}
 
 	validate := utils.FormatValidationError(req)
 	if len(validate) > 0 {
-		response.Error(c, http.StatusUnprocessableEntity, constant.MeasurementUnprocessableEntity, validate)
+		response.Error(c, http.StatusUnprocessableEntity, constant.MeasurementUnprocessableEntity.Error(), validate)
 		return
 	}
 
@@ -81,19 +81,19 @@ func (mc *MeasurementsController) Update(c *gin.Context) {
 
 	uuid, err := uuid.Parse(id)
 	if err != nil {
-		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound, nil)
+		response.Error(c, http.StatusNotFound, constant.MeasurementNotFound.Error(), nil)
 		return
 	}
 
 	var req dto.MeasurementInput
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload, err.Error())
+		response.Error(c, http.StatusBadRequest, constant.InvalidJsonPayload.Error(), err.Error())
 		return
 	}
 
 	validate := utils.FormatValidationError(req)
 	if len(validate) > 0 {
-		response.Error(c, http.StatusUnprocessableEntity, constant.MeasurementUnprocessableEntity, validate)
+		response.Error(c, http.StatusUnprocessableEntity, constant.MeasurementUnprocessableEntity.Error(), validate)
 		return
 	}
 
