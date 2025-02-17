@@ -34,12 +34,6 @@ build-main:
 run:
 	./$(CMDDIR)/$(BIN_NAME)/$(BIN_NAME)
 
-new-migration:
-	rm -f $(CMDDIR)/$(DBDIR)/$(BIN_MIGRATION)
-	$(GOBUILD) -o $(CMDDIR)/$(DBDIR)/$(BIN_MIGRATION) $(CMDDIR)/$(DBDIR)/migration.go
-	./$(CMDDIR)/$(DBDIR)/$(BIN_MIGRATION) -table=$(table)
-	rm -f $(CMDDIR)/$(DBDIR)/$(BIN_MIGRATION)
-
 migrate-build:
 	$(GOBUILD) -o $(CMDDIR)/$(MIGDIR)/$(BIN_MIGRATE) $(CMDDIR)/$(MIGDIR)/migrate.go
 	./$(CMDDIR)/$(MIGDIR)/$(BIN_MIGRATE) -mode=up
