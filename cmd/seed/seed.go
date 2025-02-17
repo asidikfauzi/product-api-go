@@ -13,8 +13,14 @@ import (
 func seedProductMeasurements(db *gorm.DB) ([]model.ProductMeasurements, error) {
 	measurements := []model.ProductMeasurements{
 		{Name: "Kilogram"},
+		{Name: "Gram"},
+		{Name: "Milligram"},
 		{Name: "Liter"},
 		{Name: "Pieces"},
+		{Name: "Dozen"},
+		{Name: "Gross"},
+		{Name: "Ball"},
+		{Name: "Karton"},
 	}
 
 	for _, measurement := range measurements {
@@ -31,6 +37,9 @@ func seedCategories(db *gorm.DB) ([]model.Categories, error) {
 		{Name: "Beverages", CreatedAt: time.Now()},
 		{Name: "Snacks", CreatedAt: time.Now()},
 		{Name: "Groceries", CreatedAt: time.Now()},
+		{Name: "Vegetables", CreatedAt: time.Now()},
+		{Name: "Protein", CreatedAt: time.Now()},
+		{Name: "Fruit", CreatedAt: time.Now()},
 	}
 
 	for _, category := range categories {
